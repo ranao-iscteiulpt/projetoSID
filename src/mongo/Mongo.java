@@ -1,3 +1,4 @@
+package mongo;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -22,26 +23,24 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.MongoIterable;
 import com.mongodb.client.model.Collation;
 
-public class ConnectToMongo extends Thread{
+import functionalities.Read;
+
+public class Mongo extends Thread{
 	
 	private static MongoClient mongo = new MongoClient( "localhost" , 27017 ); ;
   	private MongoDatabase database = mongo.getDatabase("Culturas"); 
-  	private MongoCollection collection = database.getCollection("HumidadeTemperatura");
+  	private MongoCollection<Document> collection = database.getCollection("HumidadeTemperatura");
 	
-	private File f = new File("messagemSensor.json");
-  	
-    private ArrayList<JSONObject> json = new ArrayList<JSONObject>();
-    private JSONObject jsonObject;
-    
+	private Read read = new Read();
 	
 	public static void main( String args[] ) {  
 		
-		ConnectToMongo connectToMongo = new ConnectToMongo();
+		Mongo mongo = new Mongo();
 		   
       	// Creating Credentials  
       	System.out.println("Connected to the database successfully");   
       	
-      	connectToMongo.start();
+      	mongo.start();
 	} 
 	
 	@Override
@@ -49,66 +48,34 @@ public class ConnectToMongo extends Thread{
 		
 		while(true){
 	      	
-			if(f.exists()){
-			
-				readJSON();
+			if(read.getFile().exists()){
+				
+				try {
+					Thread.sleep(10000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+				JSONParser parser = new JSONParser();
+				
+				read.JSON();
 	      	
-	      		addCollection();
+				addCollection();
 			}
-			
+				
 	      	readCollection();	
-		}
-	}
-
-	private void readJSON() {
-		
-		try {
-			Thread.sleep(10000);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		JSONParser parser = new JSONParser();
-		
-		try {
-			
-	        // FileReader reads text files in the default encoding.
-	        FileReader fileReader = new FileReader("messagemSensor.json");
-
-	        // Wrap FileReader in BufferedReader.
-	        BufferedReader bufferedReader = new BufferedReader(fileReader);
-
-	        String line;
-	       
-	        while((line = bufferedReader.readLine()) != null) {
-	        	jsonObject = (JSONObject) new JSONParser().parse(line);
-	            json.add(jsonObject);
-	        }
-	        
-	        // Close files.
-	        bufferedReader.close();
-	        
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ParseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		}
 	}
 	
 	private void addCollection() {
 		
-		for (int i = 0; i < json.size(); i++) {
+		for (int i = 0; i < read.getJsonArray().size(); i++) {
 			
-			Double temperature = Double.parseDouble((String) json.get(i).get("temperature"));
-			Double humidity = Double.parseDouble((String) json.get(i).get("humidity"));
-			String date = (String) json.get(i).get("date");
-			String time = (String) json.get(i).get("time");
+			Double temperature = Double.parseDouble((String) read.getJsonArray().get(i).get("temperature"));
+			Double humidity = Double.parseDouble((String) read.getJsonArray().get(i).get("humidity"));
+			String date = (String) read.getJsonArray().get(i).get("date");
+			String time = (String) read.getJsonArray().get(i).get("time");
 			
 			Document doc = new Document().append("temperature", temperature).append("humidity", humidity).append("date", date).append("time", time);
 			
@@ -117,17 +84,17 @@ public class ConnectToMongo extends Thread{
 		
 		System.out.println("Complete");
 
-		f.delete();
+		read.getFile().delete();
 		
-		json.clear();		
+		read.getJsonArray().clear();		
 	}
 	
 	private void readCollection() {
 		
-      	MongoCursor<Document> cursor = (MongoCursor) collection.find().iterator();
+      	MongoCursor<Document> cursor = (MongoCursor<Document>) collection.find().iterator();
 		
       	try {
-			Thread.sleep(2000);
+			Thread.sleep(5000);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
