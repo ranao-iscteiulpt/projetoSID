@@ -25,31 +25,42 @@ public class Algorithm {
 	JList<JSONObject> list;
 	JFrame framePaho = new JFrame("Paho");
 	JFrame frameMongo = new JFrame("Mongo");
+	JFrame frameSybase = new JFrame("Sybase");
 	JTextArea textAreaPaho;
 	JTextArea textAreaMongo;
+	JTextArea textAreaSybase;
 	JScrollPane scrollPanePaho;
 	JScrollPane scrollPaneMongo;
+	JScrollPane scrollPaneSybase;
 	
 	public void init(){
 		
 		framePaho.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		frameMongo.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+		frameSybase.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		
 		textAreaPaho = new JTextArea();
 		textAreaMongo = new JTextArea();
+		textAreaSybase = new JTextArea();
 		scrollPanePaho = new JScrollPane(textAreaPaho);
 		scrollPaneMongo = new JScrollPane(textAreaMongo);
+		scrollPaneSybase = new JScrollPane(textAreaSybase);
 		
 		//frame.add(textAreaPaho);
 		framePaho.add(scrollPanePaho);
 		//frame.add(textAreaMongo);
 		frameMongo.add(scrollPaneMongo);
+		frameSybase.add(scrollPaneSybase);
 		
 		framePaho.setVisible(true);
 		framePaho.setSize(500, 200);
-		frameMongo.setLocation(new Point(0, 300));
+		frameMongo.setLocation(new Point(0, 325));
 		frameMongo.setVisible(true);
 		frameMongo.setSize(700, 250);
+		frameSybase.setLocation(new Point(550, 0));
+		frameSybase.setVisible(true);
+		frameSybase.setSize(500, 300);
+		
 	}
 	
 	public void insertDateTime(MqttMessage message){
@@ -83,7 +94,11 @@ public class Algorithm {
 		return json;
 	}
 	
-	public JScrollPane getScrollPane(){
+	public JScrollPane getScrollPaneMongo(){
 		return scrollPaneMongo;
+	}
+	
+	public JScrollPane getScrollPaneSybase(){
+		return scrollPaneSybase;
 	}
 }

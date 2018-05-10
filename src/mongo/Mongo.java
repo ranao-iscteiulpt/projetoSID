@@ -87,6 +87,6 @@ public class Mongo extends Thread{
     	}
     	
     	list = new JList<>(model);
-    	jsonAlgorithm.getScrollPane().setViewportView(list);
+    	jsonAlgorithm.getScrollPaneMongo().setViewportView(list);
 	}
 }

@@ -1,7 +1,13 @@
 package sybase;
 
 import java.sql.*;
+
+import javax.swing.DefaultListModel;
+import javax.swing.JList;
+
 import com.sybase.jdbc4.jdbc.SybDriver;
+
+import functionalities.Algorithm;
 
 public class Sybase {
 	
@@ -11,11 +17,14 @@ public class Sybase {
 
 	static final String USER = "Admin";
 	static final String PASS = "admin";
+	
+	Algorithm jsonAlgorithm = new Algorithm();
+	DefaultListModel<String> model = new DefaultListModel<>();
+	JList<String> list;
 
-	public static void main(String[] args) {
-		
-		Sybase sybase = new Sybase();
-		sybase.Connect();
+	public void main(Algorithm jsonAlgorithm) {
+		this.jsonAlgorithm = jsonAlgorithm;
+		Connect();
 	}
 	
 	public void Connect(){
@@ -26,18 +35,18 @@ public class Sybase {
 	    try {
 	        Class.forName(JDBC_DRIVER);
 
-	        System.out.println("Connecting to database...");
+	        //System.out.println("Connecting to database...");
 	        conn = DriverManager.getConnection(DB_URL, USER, PASS);
 	        //conn = DriverManager.getConnection(DB_URL);
 
-	        System.out.println("Creating statement...");
+	       //System.out.println("Creating statement...");
 	        
 	        stmt = conn.createStatement();
 	        String sql;
 	        ResultSet rs;
 	        
-	        sql = "Insert into Investigador(email, nomeInvestigador) values ('investigador16@iscte-iul.pt', 'Investigador16')";
-	        stmt.execute(sql);
+	        //sql = "Insert into Investigador(email, nomeInvestigador) values ('investigador16@iscte-iul.pt', 'Investigador16')";
+	        //stmt.execute(sql);
 	        
 	        sql = "SELECT * FROM Investigador";
 	        rs = stmt.executeQuery(sql);
@@ -45,10 +54,15 @@ public class Sybase {
 	        while (rs.next()) {
 	            String email = rs.getString("email");
 	            String nome = rs.getString("nomeInvestigador");
-
-	            System.out.print("Email: " + email);
-	            System.out.print(", Nome: " + nome + "\n");
+	            
+	            model.addElement(email + nome);
+	            //System.out.print("Email: " + email);
+	            //System.out.print(", Nome: " + nome + "\n");
 	        }
+	        
+	        list = new JList<>(model);
+	        jsonAlgorithm.getScrollPaneSybase().setViewportView(list);
+	        
 	        rs.close();
 	        stmt.close();
 	        conn.close();
@@ -70,6 +84,6 @@ public class Sybase {
 	        }*/
 	    }
 	    
-	    System.out.println("Goodbye!");
+	    //System.out.println("Goodbye!");
 	}	
 }
