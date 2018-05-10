@@ -26,7 +26,7 @@ public class Paho implements MqttCallback {
 	    try {
 	        client = new MqttClient("tcp://iot.eclipse.org:1883", "js-utility-19UPV");
 	        client.connect();
-	        System.out.println("Connection done!");
+	        //System.out.println("Connection done!");
 	        client.setCallback(this);
 	        client.subscribe("foo");
 	    } catch (MqttException e) {

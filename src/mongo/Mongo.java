@@ -27,7 +27,7 @@ public class Mongo extends Thread{
 		this.jsonAlgorithm = jsonAlgorithm; 
 	
       	// Creating Credentials  
-      	System.out.println("Connected to the database successfully"); 
+      	//System.out.println("Connected to the database successfully"); 
 	} 
 	
 	@Override
@@ -66,18 +66,18 @@ public class Mongo extends Thread{
 	}
 	
 	private void readCollection() {
-		
-		model.clear();
-		
-      	MongoCursor<Document> cursor = (MongoCursor<Document>) collection.find().iterator();
-		
+			
       	try {
 			Thread.sleep(5000);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-      	    	
+      	   
+		model.clear();
+		
+      	MongoCursor<Document> cursor = (MongoCursor<Document>) collection.find().iterator();
+      	
     	model.addElement("Coleção HumidadeTemperatura\n");
     	model.addElement(" ");
     	

@@ -49,7 +49,7 @@ public class Algorithm {
 		framePaho.setSize(500, 200);
 		frameMongo.setLocation(new Point(0, 300));
 		frameMongo.setVisible(true);
-		frameMongo.setSize(600, 300);
+		frameMongo.setSize(700, 250);
 	}
 	
 	public void insertDateTime(MqttMessage message){
