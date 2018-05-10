@@ -1,4 +1,8 @@
 package paho;
+import javax.swing.JFrame;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallback;
 import org.eclipse.paho.client.mqttv3.MqttClient;
@@ -18,6 +22,7 @@ public class Paho implements MqttCallback {
 	}
 
 	public void doDemo() {
+		
 	    try {
 	        client = new MqttClient("tcp://iot.eclipse.org:1883", "js-utility-19UPV");
 	        client.connect();
@@ -37,7 +42,7 @@ public class Paho implements MqttCallback {
 	
 	@Override
 	public void messageArrived(String topic, MqttMessage message) throws Exception {
-		System.out.println(message);   
+		//System.out.println(message);   
 		jsonAlgorithm.insertDateTime(message);
 	}
 	

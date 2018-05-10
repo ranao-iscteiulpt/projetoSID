@@ -1,6 +1,10 @@
 package mongo;
 
+import javax.swing.DefaultListModel;
+import javax.swing.JList;
+
 import org.bson.Document;
+import org.json.simple.JSONObject;
 
 import com.mongodb.*;
 import com.mongodb.client.MongoCollection;
@@ -14,6 +18,8 @@ public class Mongo extends Thread{
 	private static MongoClient mongo = new MongoClient( "localhost" , 27017 );
   	private MongoDatabase database = mongo.getDatabase("Culturas"); 
   	private MongoCollection<Document> collection = database.getCollection("HumidadeTemperatura");
+	DefaultListModel<String> model = new DefaultListModel<>();
+	JList<String> list;
 
 	private Algorithm jsonAlgorithm = new Algorithm();
 	
@@ -57,11 +63,11 @@ public class Mongo extends Thread{
 		}
 		
 		jsonAlgorithm.getJSONArray().clear();
-		
-		System.out.println("Complete");
 	}
 	
 	private void readCollection() {
+		
+		model.clear();
 		
       	MongoCursor<Document> cursor = (MongoCursor<Document>) collection.find().iterator();
 		
@@ -71,12 +77,15 @@ public class Mongo extends Thread{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-      	
-    	System.out.println("");
-    	System.out.println("Coleção HumidadeTemperatura\n");
+      	    	
+    	model.addElement("Coleção HumidadeTemperatura\n");
     	
     	while(cursor.hasNext()) {
-    	    System.out.println(cursor.next().toJson());
-    	}	
+    	    //System.out.println(cursor.next().toJson());
+    	    model.addElement(cursor.next().toJson().toString());
+    	}
+    	
+    	list = new JList<>(model);
+    	jsonAlgorithm.getScrollPane().setViewportView(list);
 	}
 }
