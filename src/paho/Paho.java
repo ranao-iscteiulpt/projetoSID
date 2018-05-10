@@ -5,20 +5,21 @@ import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
-import functionalities.Write;
+import functionalities.Algorithm;
 
 public class Paho implements MqttCallback {
 
 	MqttClient client;
-	Write write = new Write();
+	Algorithm jsonAlgorithm = new Algorithm();
 
-	public static void main(String[] args) {
-	    new Paho().doDemo();
+	public void main (Algorithm jsonAlgorithm) {
+	    this.jsonAlgorithm = jsonAlgorithm;
+	    doDemo();
 	}
 
 	public void doDemo() {
 	    try {
-	        client = new MqttClient("tcp://iot.eclipse.org:1883", "js-utility-4RQe1");
+	        client = new MqttClient("tcp://iot.eclipse.org:1883", "js-utility-19UPV");
 	        client.connect();
 	        System.out.println("Connection done!");
 	        client.setCallback(this);
@@ -37,7 +38,7 @@ public class Paho implements MqttCallback {
 	@Override
 	public void messageArrived(String topic, MqttMessage message) throws Exception {
 		System.out.println(message);   
-		write.dateTime(message);
+		jsonAlgorithm.insertDateTime(message);
 	}
 	
 	@Override
