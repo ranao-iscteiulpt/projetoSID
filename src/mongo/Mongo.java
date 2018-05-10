@@ -79,6 +79,7 @@ public class Mongo extends Thread{
 		}
       	    	
     	model.addElement("Coleção HumidadeTemperatura\n");
+    	model.addElement("");
     	
     	while(cursor.hasNext()) {
     	    //System.out.println(cursor.next().toJson());
