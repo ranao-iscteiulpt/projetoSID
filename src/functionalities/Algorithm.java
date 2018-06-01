@@ -1,67 +1,41 @@
 package functionalities;
-import java.awt.Point;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.regex.Pattern;
 
 import javax.swing.DefaultListModel;
-import javax.swing.JFrame;
 import javax.swing.JList;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.ViewportLayout;
-import javax.swing.WindowConstants;
 
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
+import mongo.Mongo;
+
 public class Algorithm {
 
-	public ArrayList<JSONObject> json = new ArrayList<>();
-	DefaultListModel<JSONObject> model = new DefaultListModel<>();
-	JList<JSONObject> list;
-	JFrame framePaho = new JFrame("Paho");
-	JFrame frameMongo = new JFrame("Mongo");
-	JFrame frameSybase = new JFrame("Sybase");
-	JTextArea textAreaPaho;
-	JTextArea textAreaMongo;
-	JTextArea textAreaSybase;
-	JScrollPane scrollPanePaho;
-	JScrollPane scrollPaneMongo;
-	JScrollPane scrollPaneSybase;
+	private ArrayList<JSONObject> json = new ArrayList<>(); // Array com as mensagens recebidas e tratadas
 	
-	public void init(){
-		
-		framePaho.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-		frameMongo.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-		frameSybase.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-		
-		textAreaPaho = new JTextArea();
-		textAreaMongo = new JTextArea();
-		textAreaSybase = new JTextArea();
-		scrollPanePaho = new JScrollPane(textAreaPaho);
-		scrollPaneMongo = new JScrollPane(textAreaMongo);
-		scrollPaneSybase = new JScrollPane(textAreaSybase);
-		
-		//frame.add(textAreaPaho);
-		framePaho.add(scrollPanePaho);
-		//frame.add(textAreaMongo);
-		frameMongo.add(scrollPaneMongo);
-		frameSybase.add(scrollPaneSybase);
-		
-		framePaho.setVisible(true);
-		framePaho.setSize(500, 200);
-		frameMongo.setLocation(new Point(0, 325));
-		frameMongo.setVisible(true);
-		frameMongo.setSize(700, 250);
-		frameSybase.setLocation(new Point(550, 0));
-		frameSybase.setVisible(true);
-		frameSybase.setSize(500, 300);
-		
+	private DefaultListModel<String> model = new DefaultListModel<>(); // Modelo que vai ser adicionado a lista para inserir na textArea
+	private JList<String> list; // Lista que tem o modelo e que vai ser inserido na textArea
+	
+	private Frame frame;
+	
+	private JSONObject messageToConfirm = new JSONObject(); // Mensagem em JSON que vai ser confirmada para ser ou não enviada para o MongoDB
+	private String messageString = null; // Messagem recebido em formato String
+	
+	private boolean send = false; // Booleano que indica se a mensagem e para ser enviada ou não para o MongoDB
+	
+	public Algorithm (Frame frame){
+		this.frame = frame;
 	}
+	
+	// Metodo para inserir data e hora para testes mais rapidos e para a parte manual
 	
 	public void insertDateTime(MqttMessage message){
 	
@@ -70,35 +44,131 @@ public class Algorithm {
 		DateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
 		Date time = new Date();
 		
-		String messageString = "{" + message.toString() + ",\"date\":\"" + dateFormat.format(date) + "\",\"time\":\"" + timeFormat.format(time) + "\"}";
-		
-		insertToJSONArray(messageString);
+		messageString = "{" + message.toString() + ",\"date\":\"" + dateFormat.format(date) + "\",\"time\":\"" + timeFormat.format(time) + "\"}";
 	}
-
-	public void insertToJSONArray(String messageString) {
+	
+	/* Metodo que vai confirmar se a mensagem é uma mensagem para ser enviada para o MongoDB ou nao, 
+	alterando o valor do booleano send para false caso não e true caso a mensagem seja para ser enviada */
+	
+	public void confirm(MqttMessage message) {
+		
+		JSONParser parser = new JSONParser();
+		String erradas = null;
 		
 		try {
-			JSONParser parser = new JSONParser();
-			JSONObject jsonObject = (JSONObject) parser.parse(messageString);
-			json.add(jsonObject);
-			model.addElement(jsonObject);
-			list = new JList<JSONObject>(model);
-			scrollPanePaho.setViewportView(list);
+			if(message.toString().contains("{") && message.toString().contains("}")){
+				messageToConfirm = (JSONObject) parser.parse(message.toString());
+			}
+			else{
+				erradas = message.toString();
+			}
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		if(message.toString().equals("teste")){
+			send = false;
+		} 
+		else if(message.toString().equals("")){
+			send = false;
+		} 
+		else if(!messageToConfirm.containsKey("temperature")){
+			send = false;
+			erradas = message.toString();
+		}
+		else if(messageToConfirm.get("temperature").equals("") || Pattern.matches("[a-zA-Z]+", messageToConfirm.get("temperature").toString())){
+			send = false;
+			erradas = message.toString();
+		}
+		else if(!messageToConfirm.containsKey("humidity")){
+			send = false;
+			erradas = message.toString();
+		}
+		else if(messageToConfirm.get("humidity").equals("") || Pattern.matches("[a-zA-Z]+", messageToConfirm.get("humidity").toString())){
+			send = false;
+			erradas = message.toString();
+		}
+		else if(!messageToConfirm.containsKey("date")){
+			send = false;
+			erradas = message.toString();
+		}
+		else if(messageToConfirm.get("date").equals("") || Pattern.matches("[a-zA-Z]+", messageToConfirm.get("date").toString())){
+			send = false;
+			erradas = message.toString();
+		}
+		else if(!messageToConfirm.containsKey("time")){
+			send = false;
+			erradas = message.toString();
+		}
+		else if(Pattern.matches("[a-zA-Z]+", messageToConfirm.get("time").toString())){
+			send = false;
+			erradas = message.toString();
+		}
+		else{
+			send = true;
+		}
+		
+		if(send == true){
+			addTextArea(messageToConfirm.toString());
+		}
+		else{
+			addTextArea(erradas);
+		}
+	}
+	
+	/* Metodo que vai utilizar a mensagem já confirmada e vai fazer as conversões necessárias, i.e, String para double no caso da
+	temperatura e humidade, timestamp para a data e time para a hora */
+	
+	public void conversion(){
+		
+		Double temperature = Double.parseDouble((String) messageToConfirm.get("temperature"));
+		Double humidity = Double.parseDouble((String) messageToConfirm.get("humidity"));
+		String date = (String) messageToConfirm.get("date");
+		String time = (String) messageToConfirm.get("time");
+		
+		Time timeTemp = Time.valueOf(time);
+		@SuppressWarnings("deprecation")
+		Time timeSQL = Time.valueOf((timeTemp.getHours()) + ":" + timeTemp.getMinutes() + ":" + timeTemp.getSeconds()); 
+		
+		String[] tokensDate = date.split("/");
+		Timestamp dateSQL = Timestamp.valueOf(tokensDate[2] + "-" + tokensDate[1] + "-" + tokensDate[0] + " " + time);
+		
+		messageString = "{" + "\"temperature\":" + temperature + ",\"humidity\":"+ humidity + ",\"date\":\"" + dateSQL + "\",\"time\":\"" + timeSQL + "\"}";
+	}
+	
+	// Metodo que vai inserir as mensagens comfirmadas e tratadas num array para posteriomente serem enviadas para o MongoDB
+	
+	public void insertArray(String messageString){
+		
+		JSONParser parser = new JSONParser();
+		JSONObject messageJson = new JSONObject();
+		try {
+			messageJson = (JSONObject) parser.parse(messageString);
+			json.add(messageJson);
 		} catch (ParseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 	
+	// Metodo que vai inserir todas as mensagens na textArea para serem visualizadas na frame
+	
+	public void addTextArea(String messageString){
+		model.addElement(messageString);
+		list = new JList<String>(model);
+		frame.getScrollPanePaho().setViewportView(list);
+	}
+	
 	public ArrayList<JSONObject> getJSONArray(){
 		return json;
 	}
 	
-	public JScrollPane getScrollPaneMongo(){
-		return scrollPaneMongo;
+	public String getMessageString(){
+		return messageString;
 	}
 	
-	public JScrollPane getScrollPaneSybase(){
-		return scrollPaneSybase;
+	public boolean getSend(){
+		return send;
 	}
 }

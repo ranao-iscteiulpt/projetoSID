@@ -1,10 +1,19 @@
 package mongo;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.Arrays;
+import java.util.List;
+
 import javax.swing.DefaultListModel;
 import javax.swing.JList;
 
 import org.bson.Document;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 import com.mongodb.*;
 import com.mongodb.client.MongoCollection;
@@ -12,81 +21,165 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 
 import functionalities.Algorithm;
+import functionalities.Frame;
 
 public class Mongo extends Thread{
 	
-	private static MongoClient mongo = new MongoClient( "localhost" , 27017 );
-  	private MongoDatabase database = mongo.getDatabase("Culturas"); 
-  	private MongoCollection<Document> collection = database.getCollection("HumidadeTemperatura");
-	DefaultListModel<String> model = new DefaultListModel<>();
-	JList<String> list;
+	private static MongoClient mongo; // Cliente MongoDB
+	
+  	private MongoDatabase database; // Base de dados MongoDB
+  	
+  	// Coleções da base de dados MongoDB 
+  	
+  	private MongoCollection<Document> HumidadeTemperatura;
+  	private MongoCollection<Document> BackUp;
+  	
+  	// Modelos e lista para inserir posteriormente no scrollPane
+  	
+	private DefaultListModel<String> modelHT = new DefaultListModel<>();
+	private DefaultListModel<String> modelB = new DefaultListModel<>();
+	private JList<String> list;
+	//---
+	
+	private Frame frame;
+	private Algorithm algorithm = new Algorithm(frame);
+	private boolean connect = false;
 
-	private Algorithm jsonAlgorithm = new Algorithm();
+	public Mongo(Frame frame){
+		this.frame = frame;
+	}
 	
-	public void main(Algorithm jsonAlgorithm) {  
-		this.jsonAlgorithm = jsonAlgorithm; 
+	// Metodo que vai iniciar o cliente MongoDB e acessar a base de dados e coleções
 	
-      	// Creating Credentials  
-      	//System.out.println("Connected to the database successfully"); 
+	public void main(Algorithm algorithm) {  
+		
+		this.algorithm = algorithm; 
+		
+		frame.getHostButton().addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				
+				ServerAddress serverAddress = new ServerAddress(frame.getHostText().getText(), 27017);  
+				MongoCredential credential = MongoCredential.createCredential("admin", "MedicoesSensor", "admin".toCharArray());
+				mongo = new MongoClient(serverAddress, Arrays.asList(credential));
+				database = mongo.getDatabase("MedicoesSensor");
+				HumidadeTemperatura = database.getCollection("HumidadeTemperatura");
+				BackUp = database.getCollection("BackUp");
+				connect = true;
+				start();
+			}
+		});
+		
+		frame.getFrequencyButtonMongo().addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				interrupt();
+			}
+		}); 
 	} 
+	
+	// Metodo que vai chamar o mtodo para inserir dados na coleção principal HumidadeTemperatura consoante o timer escolhido
 	
 	@Override
 	public void run() {
 		
+		readCollection();
+		readBackUp();
+		
+		
 		while(true){
-	      					
+	      			
 			try {
-				Thread.sleep(10000);
+				Thread.sleep(frame.getTimerMongo());
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} 
 			
-			addCollection();
+			if(algorithm.getJSONArray().size() > 0){
+				addCollection();
 				
-	      	readCollection();	
+		      	readCollection();
+		      	readBackUp();
+			}
 		}
 	}
+	
+	// Metodo para inserir dados na coleção HumidadeTemperatura
 	
 	private void addCollection() {
 		
-		for (int i = 0; i < jsonAlgorithm.getJSONArray().size(); i++) {
-			
-			Double temperature = Double.parseDouble((String) jsonAlgorithm.getJSONArray().get(i).get("temperature"));
-			Double humidity = Double.parseDouble((String) jsonAlgorithm.getJSONArray().get(i).get("humidity"));
-			String date = (String) jsonAlgorithm.getJSONArray().get(i).get("date");
-			String time = (String) jsonAlgorithm.getJSONArray().get(i).get("time");
-			
-			Document doc = new Document().append("temperature", temperature).append("humidity", humidity).append("date", date).append("time", time);
-			
-			collection.insertOne(doc);
-		}
+		Document doc = new Document();
 		
-		jsonAlgorithm.getJSONArray().clear();
+		if(!algorithm.getJSONArray().isEmpty()){
+			
+			for (int i = 0; i < algorithm.getJSONArray().size(); i++) {
+								
+				doc = Document.parse(algorithm.getJSONArray().get(i).toString());
+				
+				HumidadeTemperatura.insertOne(doc);
+			}
+			
+			algorithm.getJSONArray().clear();
+			
+			readCollection();
+		}
 	}
 	
-	private void readCollection() {
+	// Metodo para inserir dados na coleção BackUp (dados que foram enviados com sucesso para o sybase)
+	
+	public void addBackUp(Double temperatura, Double humidade, Timestamp date, Time time) {
 			
-      	try {
-			Thread.sleep(5000);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-      	   
-		model.clear();
+		Document doc = new Document().append("temperature", temperatura).append("humidity", humidade).append("date", date).append("time", time);
 		
-      	MongoCursor<Document> cursor = (MongoCursor<Document>) collection.find().iterator();
-      	
-    	model.addElement("Coleção HumidadeTemperatura\n");
-    	model.addElement(" ");
-    	
+		BackUp.insertOne(doc);
+		
+		readBackUp();
+	}
+	
+	// Metodo para ler coleção BackUp e inserir dados no ScrollPane para serem visualizados na frame
+	
+	private void readBackUp() {
+		
+		modelB.clear();
+		
+      	MongoCursor<Document> cursor = (MongoCursor<Document>) BackUp.find().iterator();
+
     	while(cursor.hasNext()) {
-    	    //System.out.println(cursor.next().toJson());
-    	    model.addElement(cursor.next().toJson().toString());
-    	}
-    	
-    	list = new JList<>(model);
-    	jsonAlgorithm.getScrollPaneMongo().setViewportView(list);
+    	    modelB.addElement(cursor.next().toJson().toString());
+       	}
+
+    	list = new JList<>(modelB);
+    	frame.getScrollPaneMongoB().setViewportView(list);
+	}
+	
+	// Metodo para ler coleção HumidadeTemperatura e inserir dados no ScrollPane para serem visualizados na frame
+	
+	private void readCollection() {
+	
+		modelHT.clear();
+		
+      	MongoCursor<Document> cursor = (MongoCursor<Document>) HumidadeTemperatura.find().iterator();
+
+    	while(cursor.hasNext()) {
+    	    modelHT.addElement(cursor.next().toJson().toString());
+       	}
+
+    	list = new JList<>(modelHT);
+    	frame.getScrollPaneMongoHT().setViewportView(list);
+	}
+	
+	public MongoCollection<Document> getHT(){
+		return HumidadeTemperatura;
+	}
+	
+	public DefaultListModel<String> getModelHT(){
+		return modelHT;
+	}
+	
+	public boolean getConnect(){
+		return connect;
 	}
 }

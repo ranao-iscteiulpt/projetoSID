@@ -8,15 +8,18 @@ public class Main {
 
 	public static void main(String[] args) {
 		
-		Algorithm jsonAlgorithm = new Algorithm();
-		jsonAlgorithm.init();
-		Paho paho = new Paho();
-		Mongo mongo = new Mongo();
-		Sybase sybase = new Sybase();
-		paho.main(jsonAlgorithm);
-		mongo.main(jsonAlgorithm);
-		sybase.main(jsonAlgorithm);
-     	mongo.start();
+		Frame frame = new Frame();
+		frame.init();
+		
+		Paho paho = new Paho(frame);
+		Mongo mongo = new Mongo(frame);
+		Sybase sybase = new Sybase(frame, mongo);
+		
+		Algorithm algorithm = new Algorithm(frame);
+		
+		paho.main(algorithm);
+		mongo.main(algorithm);
+		sybase.main();
 	}
 
 }
